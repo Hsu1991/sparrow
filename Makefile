@@ -29,8 +29,9 @@ obj-m := $(MOD_NAME1).o $(MOD_NAME2).o
 #
 # NOTE: the kernel should built first!
 #
-KDIR := $(pwd)	# set to yours
-CROSS_ARCH := ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi-
+KVERSION    := $(shell uname -r)
+KDIR := /usr/src/linux-headers-$(KVERSION)/
+# CROSS_ARCH := ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi-
 
 PWD=$(shell pwd) 
 
