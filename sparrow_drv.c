@@ -86,12 +86,14 @@ static ssize_t spa_write(struct file *filp, const char *buf,
 	/* skip the offset variable */
 	copy_from_user(spa_mem, buf, len);
 
+	for ()
+
 	/* Thread Synchronization Testing */
-	if (strcmp(buf, "start\n") == 0) {
+	if (strcmp(spa_mem, "start\n") == 0) {
 		TS_test_start();
 	}
 
-	if (strcmp(buf, "stop\n") == 0) {
+	if (strcmp(spa_mem, "stop\n") == 0) {
 		TS_test_stop();
 	}
 	return len;
