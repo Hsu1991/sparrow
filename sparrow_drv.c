@@ -16,6 +16,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
+#include <linux/string.h>
 
 #include <asm/uaccess.h>
 
@@ -82,11 +83,12 @@ static ssize_t spa_write(struct file *filp, const char *buf,
 	if (len > BUF_LEN) {
 		len = BUF_LEN;
 	}
+	//
+	/* clear mem first so that stop can work*/
+	memset(spa_mem, 0, BUF_LEN);
 
 	/* skip the offset variable */
 	copy_from_user(spa_mem, buf, len);
-
-	for ()
 
 	/* Thread Synchronization Testing */
 	if (strcmp(spa_mem, "start\n") == 0) {
