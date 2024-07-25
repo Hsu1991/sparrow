@@ -29,7 +29,7 @@ static struct task_struct 	*TS_task1, *TS_task2, *TS_task3;
 
 /* TS_thread1, add 1 to v_s_wr */
 static int TS_thread1(void *data) {
-	while (1) {
+	while (!kthread_should_stop()) {
 		printk("%s: add 1\n", __func__);
 
 		spin_lock(&s_wr_lock);
@@ -44,7 +44,7 @@ static int TS_thread1(void *data) {
 
 /* TS_thread2, read and print v_s_wr */
 static int TS_thread2(void *data) {
-	while (1) {
+	while (!kthread_should_stop()) {
 		spin_lock(&s_wr_lock);
 		printk("%s: print---%d\n", __func__, v_s_wr);
 		spin_unlock(&s_wr_lock);
@@ -57,7 +57,7 @@ static int TS_thread2(void *data) {
 
 /* TS_thread3, dec 1  from v_s_wr */
 static int TS_thread3(void *data) {
-	while (1) {
+	while (!kthread_should_stop()) {
 		printk("%s: dec 1\n", __func__);
 
 		spin_lock(&s_wr_lock);
@@ -75,23 +75,28 @@ static int TS_thread3(void *data) {
 					The global functions provided to others
   =======================================================================*/
 void TS_test_stop(void) {
+	printk("stopping kthread");
 	if (TS_task1) {
 		kthread_stop(TS_task1);
 		TS_task1 = NULL;
 	}
+	printk("stop kthread1 done");
 
 	if (TS_task2) {
 		kthread_stop(TS_task2);
 		TS_task2 = NULL;
 	}
+	printk("stop kthread2 done");
 
 	if (TS_task3) {
 		kthread_stop(TS_task3);
 		TS_task3 = NULL;
 	}
+	printk("stop kthread3 done");
 }
 
 int TS_test_start(void) {
+	printk("starting kthread");
 	TS_task1 = kthread_create(TS_thread1, NULL, "TS_task1");
 	TS_task2 = kthread_create(TS_thread2, NULL, "TS_task2");
 	TS_task3 = kthread_create(TS_thread3, NULL, "TS_task3");
