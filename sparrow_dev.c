@@ -17,9 +17,19 @@
 
 #define DEVICE_NAME			"sparrow"
 
+void release_nothing(struct device *dev)
+{
+	return;
+}
+
 static struct platform_device spa_pdev = {
 	.name 	= DEVICE_NAME,
 	.id 	= -1,
+	/* init .dev.release to fix Device 'xxx' does not have a release() function,
+	  it is broken and must be fixed, warning */
+	.dev    = {
+		.release = release_nothing
+	}
 };
 
 static int __init sparrow_dev_init(void) { 
@@ -45,6 +55,13 @@ static void __exit sparrow_dev_exit(void) {
 	 * it is broken and must be fixed,
 	 * think it, WHY??
 	 */
+
+	// Answer: because the release function of the dev in the platform device is not initialized.
+	//         platform_device_register() will initialize the pdev->dev by device_initialize(). However,
+	//         NOT all field is inited, dev.release is an example
+	// Except the "release_nothing()" approach, we can use platform_device_alloc() & platform_device_add() 
+	// instead to avoid this warning.
+	// see: https://stackoverflow.com/questions/15532170/device-has-no-release-function-what-does-this-mean
 	platform_device_unregister(&spa_pdev);
 
 	printk("Bye world, this is Sparrow Dev!\n"); 
