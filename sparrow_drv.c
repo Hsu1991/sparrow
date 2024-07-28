@@ -22,7 +22,7 @@
 
 #define DEVICE_NAME			"sparrow"
 
-#define SPA_DEFAULT_MAJOR 	(111)	/* major device number, if invalid, dynamic alloc it */
+#define SPA_DEFAULT_MAJOR 	(0)	/* major device number, if invalid, dynamic alloc it */
 #define SPA_NUMS 			(2)		/* device numbers */
 
 
@@ -33,6 +33,9 @@ static unsigned int			spa_major = SPA_DEFAULT_MAJOR;
 /* a short memory used for read/write demo */
 #define BUF_LEN				(32)
 static char 				spa_mem[BUF_LEN];
+
+static struct cdev mycdev;
+static struct class *myclass = NULL;
 
 extern void TS_test_stop(void);
 extern int TS_test_start(void);
@@ -141,6 +144,11 @@ static int spa_probe(struct platform_device *pdev) {
 		spa_major = MAJOR(devno);
 	}
 
+	printk("spa_major =  %d\n", spa_major);
+
+	myclass = class_create(DEVICE_NAME "_sys");
+
+	device_create(myclass, NULL, spa_major, NULL, DEVICE_NAME"_dev");
 	
 	/*
      * add the char device to system
@@ -160,11 +168,18 @@ static int spa_probe(struct platform_device *pdev) {
 	return 0;
 }
 
+static void cdev_cleanup(void) {
+	printk("clean up auto gen device node");
+	device_destroy(myclass, spa_major);
+	class_destroy(myclass);
+}
+
 static int spa_remove(struct platform_device *pdev) {
 	printk("%s!\n", __func__); 
 
 	/* remove char device and unregister device number */
 	cdev_del(&spa_cdev);
+	cdev_cleanup();
     unregister_chrdev_region(MKDEV(spa_major, 0), SPA_NUMS);
 
 	TS_test_stop();
@@ -198,7 +213,6 @@ static int __init sparrow_drv_init(void) {
 
 static void __exit sparrow_drv_exit(void) { 
 	platform_driver_unregister(&spa_pdrv);
-
 	printk("Bye world, this is Sparrow Drv!\n"); 
 	return; 
 } 
