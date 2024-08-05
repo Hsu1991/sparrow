@@ -22,13 +22,14 @@
 
 #define DEVICE_NAME			"sparrow"
 
-#define SPA_DEFAULT_MAJOR 	(0)	/* major device number, if invalid, dynamic alloc it */
-#define SPA_NUMS 			(2)		/* device numbers */
+#define SPA_DEFAULT_MAJOR 	(111)	/* major device number, if invalid, dynamic alloc it */
+#define SPA_NUMS 			(1)		/* device numbers */
 
 
 /* the sparrow char device and its major */
 static struct cdev 			spa_cdev;
 static unsigned int			spa_major = SPA_DEFAULT_MAJOR;
+static unsigned int 		devt = 0;
 
 /* a short memory used for read/write demo */
 #define BUF_LEN				(32)
@@ -39,6 +40,9 @@ static struct class *myclass = NULL;
 
 extern void TS_test_stop(void);
 extern int TS_test_start(void);
+
+static dev_t dev = 0;
+static struct class *dev_class;
 
 static int spa_open(struct inode *inode, struct file *filp) {
 	unsigned int major, minor;
@@ -144,18 +148,24 @@ static int spa_probe(struct platform_device *pdev) {
 		spa_major = MAJOR(devno);
 	}
 
-	printk("spa_major =  %d\n", spa_major);
+	devt = devno;
+
+	printk("spa_major =  %d(0x%x)\n", spa_major, spa_major);
+	printk("devno= %d(0x%x)\n", devno, devno);
 
 	myclass = class_create(DEVICE_NAME "_sys");
-
-	device_create(myclass, NULL, spa_major, NULL, DEVICE_NAME"_dev");
+	struct device *tmp = NULL;
+	tmp = device_create(myclass, NULL, devno, NULL, DEVICE_NAME"_dev");
+	if(IS_ERR(tmp)){
+		pr_err("%s:%d error code %d\n", __func__, __LINE__, PTR_ERR(tmp));
+	}
 	
 	/*
      * add the char device to system
      */
 	cdev_init(&spa_cdev, &spa_fops);
 
-	spa_cdev.owner 	= THIS_MODULE;
+	// spa_cdev.owner 	= THIS_MODULE;
 	spa_cdev.ops	= &spa_fops;
 
 	ret = cdev_add(&spa_cdev, devno, SPA_NUMS);
@@ -170,7 +180,7 @@ static int spa_probe(struct platform_device *pdev) {
 
 static void cdev_cleanup(void) {
 	printk("clean up auto gen device node");
-	device_destroy(myclass, spa_major);
+	device_destroy(myclass, devt);
 	class_destroy(myclass);
 }
 
@@ -199,6 +209,25 @@ static int __init sparrow_drv_init(void) {
 
 	printk("Hello world, this is Sparrow Drv!\n"); 
 
+	if((alloc_chrdev_region(&dev, 0, 1, "etx_Dev")) <0){
+		pr_err("Cannot allocate major number for device\n");
+		return -1;
+	}
+	pr_info("Major = %d Minor = %d \n",MAJOR(dev), MINOR(dev));
+
+	/*Creating struct class*/
+	dev_class = class_create("etx_class");
+	if(IS_ERR(dev_class)){
+		pr_err("Cannot create the struct class for device\n");
+	}
+
+	/*Creating device*/
+	if(IS_ERR(device_create(dev_class,NULL,dev,NULL,"etx_device"))){
+		pr_err("Cannot create the Device\n");
+	}
+	pr_info("Kernel Module Inserted Successfully...\n");
+	
+
  	/*
 	 * add spa_pdrv to system
 	 */
@@ -214,6 +243,10 @@ static int __init sparrow_drv_init(void) {
 static void __exit sparrow_drv_exit(void) { 
 	platform_driver_unregister(&spa_pdrv);
 	printk("Bye world, this is Sparrow Drv!\n"); 
+	        device_destroy(dev_class,dev);
+        class_destroy(dev_class);
+        unregister_chrdev_region(dev, 1);
+        pr_info("Kernel Module Removed Successfully...\n");
 	return; 
 } 
 
